@@ -11,11 +11,12 @@
 #include "uint256.h"
 
 #include <stdint.h>
+#include <limits>
 
 class CTransaction;
 
 /** No amount larger than this (in DIME) is valid */
-static const int64_t MAX_MONEY = 500000000 * COIN; // Max of 500mil per transaction (sum of input coins). This could cause a fork if raised
+static const int64_t MAX_MONEY = 460000000000 * COIN; // Dimecoin: maximum of 460B coins (given some randomness), max transaction 460,000,000,000
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
@@ -156,7 +157,7 @@ public:
         // to spend something, then we consider it dust.
         // A typical txout is 34 bytes big, and will
         // need a CTxIn of at least 148 bytes to spend,
-        // so dust is a txout less than 546 satoshis 
+        // so dust is a txout less than 546 satoshis
         // with default nMinRelayTxFee.
         return ((nValue*1000)/(3*((int)GetSerializeSize(SER_DISK,0)+148)) < nMinRelayTxFee);
     }
@@ -205,7 +206,7 @@ public:
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
-        if(this->nVersion >= TXCOMMENT_VERSION) { 
+        if(this->nVersion >= TXCOMMENT_VERSION) {
         READWRITE(strTxComment); }
     )
 

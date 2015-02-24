@@ -480,10 +480,10 @@ void static BitcoinMiner(CWallet *pwallet)
     // Each thread has its own key and counter
     CReserveKey reservekey(pwallet);
     unsigned int nExtraNonce = 0;
-    
+
     CBlockIndex* pindexPrev = NULL;
-        
-    if (Params().NetworkID() != CChainParams::REGTEST) 
+
+    if (Params().NetworkID() != CChainParams::REGTEST)
     {
         // wait for start
         pindexPrev = chainActive.Tip();
@@ -495,10 +495,10 @@ void static BitcoinMiner(CWallet *pwallet)
             boost::this_thread::interruption_point();
         }
     }
-    
+
     try { while (true) {
-                    
-        if (Params().NetworkID() != CChainParams::REGTEST) 
+
+        if (Params().NetworkID() != CChainParams::REGTEST)
         {
             // Busy-wait for the network to come online so we don't waste time mining
             // on an obsolete chain. In regtest mode we expect to fly solo.
@@ -508,7 +508,7 @@ void static BitcoinMiner(CWallet *pwallet)
                         vNodes.empty() ||
                         IsInitialBlockDownload() ||
                         (pindexPrev != chainActive.Tip())
-                        )) 
+                        ))
                     ||
                     (GetTime() - pindexPrev->GetBlockTime() > 5 * 60) )
             {
@@ -525,7 +525,7 @@ void static BitcoinMiner(CWallet *pwallet)
                 boost::this_thread::interruption_point();
             }
         }
-                
+
         //
         // Create new block
         //
@@ -551,7 +551,7 @@ void static BitcoinMiner(CWallet *pwallet)
         {
 
             hash = pblock->GetHash();
-            
+
             // Check if something found
             if (hash <= hashTarget)
             {

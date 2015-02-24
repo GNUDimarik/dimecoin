@@ -9,6 +9,9 @@
 #include "sync.h"
 #include "uint256.h"
 #include "util.h"
+#include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -311,6 +314,9 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
     return true;
 }
 
+#define SOCKET_SEND_BUFFER_SIZE 16384 /* 16 kb */
+#define SOCKET_RECEIVE_BUFFER_SIZE SOCKET_SEND_BUFFER_SIZE
+
 bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRet, int nTimeout)
 {
     hSocketRet = INVALID_SOCKET;
@@ -341,6 +347,32 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
         closesocket(hSocket);
         return false;
     }
+
+#if 0
+    int buffer_size = SOCKET_SEND_BUFFER_SIZE;
+    int size;
+    socklen_t optlen = sizeof (int);
+
+    getsockopt(hSocket, SOL_SOCKET, SO_SNDBUF, (void*) &size, &optlen);
+    LogPrintf("Receive send size before: %d\n", size);
+
+    getsockopt(hSocket, SOL_SOCKET, SO_RCVBUF, (void*) &size, &optlen);
+    LogPrintf("Receive buffer size before: %d\n", size);
+#endif
+    // trying optimize network operations via increasing buffer size
+    /*if (setsockopt(hSocket, SOL_SOCKET, SO_SNDBUF, (void*) &buffer_size, sizeof(int)) != 0)
+        LogPrintf("Cannot set send buffer size, reason: %s\n", strerror(errno));
+
+    if (setsockopt(hSocket, SOL_SOCKET, SO_RCVBUF, (void*) &buffer_size, sizeof(int)) != 0)
+        LogPrintf("Cannot set receive buffer size, reason: %s\n", strerror(errno));*/
+
+#if 0
+    getsockopt(hSocket, SOL_SOCKET, SO_SNDBUF, (void*) &size, &optlen);
+    LogPrintf("Receive send size after: %d\n", size);
+
+    getsockopt(hSocket, SOL_SOCKET, SO_RCVBUF, (void*) &size, &optlen);
+    LogPrintf("Receive buffer size after: %d\n", size);
+#endif
 
     if (connect(hSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR)
     {

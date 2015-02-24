@@ -39,6 +39,9 @@
 using namespace std;
 using namespace boost;
 
+//static const int MAX_OUTBOUND_CONNECTIONS = 8;
+static const int MAX_OUTBOUND_CONNECTIONS = 800;
+
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
 
@@ -57,7 +60,6 @@ uint64_t nLocalHostNonce = 0;
 static std::vector<SOCKET> vhListenSocket;
 CAddrMan addrman;
 int nMaxConnections = 125;
-int nMaxOutboundConnections = 8;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -341,6 +343,66 @@ bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const cha
     closesocket(hSocket);
     return error("GetMyExternalIP() : connection closed");
 }
+
+/*bool GetMyExternalIP(CNetAddr& ipRet)
+{
+    CService addrConnect;
+    const char* pszGet;
+    const char* pszKeyword;
+
+    for (int nLookup = 0; nLookup <= 1; nLookup++)
+    for (int nHost = 1; nHost <= 2; nHost++)
+    {
+        // We should be phasing out our use of sites like these. If we need
+        // replacements, we should ask for volunteers to put this simple
+        // php file on their web server that prints the client IP:
+        //  <?php echo $_SERVER["REMOTE_ADDR"]; ?>
+        if (nHost == 1)
+        {
+            addrConnect = CService("91.198.22.70", 80); // checkip.dyndns.org
+
+            if (nLookup == 1)
+            {
+                CService addrIP("checkip.dyndns.org", 80, true);
+                if (addrIP.IsValid())
+                    addrConnect = addrIP;
+            }
+
+            pszGet = "GET / HTTP/1.1\r\n"
+                     "Host: checkip.dyndns.org\r\n"
+                     "User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)\r\n"
+                     "Connection: close\r\n"
+                     "\r\n";
+
+            pszKeyword = "Address:";
+        }
+        else if (nHost == 2)
+        {
+            std::cout << __PRETTY_FUNCTION__ << ": trying to connect 74.208.43.192 "  << std::endl;
+            addrConnect = CService("74.208.43.192", 80); // www.showmyip.com
+
+            if (nLookup == 1)
+            {
+                CService addrIP("www.showmyip.com", 80, true);
+                if (addrIP.IsValid())
+                    addrConnect = addrIP;
+            }
+
+            pszGet = "GET /simple/ HTTP/1.1\r\n"
+                     "Host: www.showmyip.com\r\n"
+                     "User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)\r\n"
+                     "Connection: close\r\n"
+                     "\r\n";
+
+            pszKeyword = NULL; // Returns just IP address
+        }
+
+        if (GetMyExternalIP2(addrConnect, pszGet, pszKeyword, ipRet))
+            return true;
+    }
+
+    return false;
+}*/
 
 bool GetMyExternalIP(CNetAddr& ipRet)
 {
@@ -915,7 +977,7 @@ void ThreadSocketHandler()
                 if (nErr != WSAEWOULDBLOCK)
                     LogPrintf("socket error accept failed: %s\n", NetworkErrorString(nErr));
             }
-            else if (nInbound >= nMaxConnections - nMaxOutboundConnections)
+            else if (nInbound >= nMaxConnections - MAX_OUTBOUND_CONNECTIONS)
             {
                 closesocket(hSocket);
             }
@@ -1036,6 +1098,8 @@ void ThreadSocketHandler()
             BOOST_FOREACH(CNode* pnode, vNodesCopy)
                 pnode->Release();
         }
+
+        //MilliSleep(10);
     }
 }
 
@@ -1089,7 +1153,7 @@ void ThreadMapPort()
             }
         }
 
-        string strDesc = "Dogecoin " + FormatFullVersion();
+        string strDesc = "Dime " + FormatFullVersion();
 
         try {
             while (true) {
@@ -1163,18 +1227,6 @@ void MapPort(bool)
 
 void ThreadDNSAddressSeed()
 {
-    // goal: only query DNS seeds if address need is acute
-    if ((addrman.size() > 0) &&
-        (!GetBoolArg("-forcednsseed", false))) {
-        MilliSleep(11 * 1000);
-
-        LOCK(cs_vNodes);
-        if (vNodes.size() >= 2) {
-            LogPrintf("P2P peers available. Skipped DNS seeding.\n");
-            return;
-        }
-    }
-
     const vector<CDNSSeedData> &vSeeds = Params().DNSSeeds();
     int found = 0;
 
@@ -1626,7 +1678,7 @@ bool BindListenPort(const CService &addrBind, string& strError)
     {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. Dogecoin Core Daemon is probably already running."), addrBind.ToString());
+            strError = strprintf(_("Unable to bind to %s on this computer. Dime Core is probably already running."), addrBind.ToString());
         else
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %s)"), addrBind.ToString(), NetworkErrorString(nErr));
         LogPrintf("%s\n", strError);
@@ -1708,7 +1760,7 @@ void StartNode(boost::thread_group& threadGroup)
 {
     if (semOutbound == NULL) {
         // initialize semaphore
-        int nMaxOutbound = min(nMaxOutboundConnections, nMaxConnections);
+        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, nMaxConnections);
         semOutbound = new CSemaphore(nMaxOutbound);
     }
 
@@ -1752,7 +1804,7 @@ bool StopNode()
     LogPrintf("StopNode()\n");
     MapPort(false);
     if (semOutbound)
-        for (int i=0; i<nMaxOutboundConnections; i++)
+        for (int i=0; i<MAX_OUTBOUND_CONNECTIONS; i++)
             semOutbound->post();
     MilliSleep(50);
     DumpAddresses();
@@ -1847,6 +1899,8 @@ void CNode::RecordBytesRecv(uint64_t bytes)
     LOCK(cs_totalBytesRecv);
     nTotalBytesRecv += bytes;
 }
+
+#include <iostream>
 
 void CNode::RecordBytesSent(uint64_t bytes)
 {

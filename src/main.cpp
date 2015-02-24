@@ -746,6 +746,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state)
         if (txout.nValue < 0)
             return state.DoS(100, error("CheckTransaction() : txout.nValue negative"),
                              REJECT_INVALID, "bad-txns-vout-negative");
+        // We don't want have a limit in transactions
         if (txout.nValue > MAX_MONEY)
             return state.DoS(100, error("CheckTransaction() : txout.nValue too high"),
                              REJECT_INVALID, "bad-txns-vout-toolarge");
@@ -1192,28 +1193,27 @@ static const int64_t nInterval = nTargetTimespan / nTargetSpacing; // 1024 block
 
 int64_t GetBlockValue(int nHeight, int64_t nFees)
 {
-    if(nHeight == 0){
-			return nGenesisBlockRewardCoin;
-	}
-	
-	int64_t nSubsidy = nBlockRewardStartCoin;
-	
-	// Subsidy is cut in half every 512000 blocks
-  nSubsidy >>= (nHeight / 512000);
-	
-	int64_t modNumber = nHeight % 1024;
-	
-	if(modNumber == 0){
-		modNumber = 1024; //every 1024 have a big bonus
-	}
-	
-	nSubsidy = nSubsidy * modNumber;
-	
-	//premined 8% for dev, support, bounty, and giveaway etc
-	if(nHeight > 9 && nHeight < 128){
-		nSubsidy = 350000000 * COIN;
-	}
-	
+    if(nHeight == 0)
+        return nGenesisBlockRewardCoin;
+
+    int64_t nSubsidy = nBlockRewardStartCoin;
+
+    // Subsidy is cut in half every 512000 blocks
+    nSubsidy >>= (nHeight / 512000);
+
+    int64_t modNumber = nHeight % 1024;
+
+    if(modNumber == 0){
+        modNumber = 1024; //every 1024 have a big bonus
+    }
+
+    nSubsidy = nSubsidy * modNumber;
+
+    //premined 8% for dev, support, bounty, and giveaway etc
+    if(nHeight > 9 && nHeight < 128){
+        nSubsidy = 350000000 * COIN;
+    }
+
     return nSubsidy + nFees;
 }
 
@@ -1273,7 +1273,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return pindexLast->nBits;
     }
 
-    // Go back by what we want to be nInterval blocks 
+    // Go back by what we want to be nInterval blocks
     const CBlockIndex* pindexFirst = pindexLast;
     for (int i = 0; pindexFirst && i < nInterval-1; i++)
         pindexFirst = pindexFirst->pprev;
@@ -1984,7 +1984,7 @@ bool static DisconnectTip(CValidationState &state) {
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         // ignore validation errors in resurrected transactions
         list<CTransaction> removed;
-        CValidationState stateDummy; 
+        CValidationState stateDummy;
         if (!tx.IsCoinBase())
             if (!AcceptToMemoryPool(mempool, stateDummy, tx, false, NULL))
                 mempool.remove(tx, removed, true);
@@ -2045,7 +2045,7 @@ bool ConnectTip(CValidationState &state, CBlockIndex *pindexNew) {
     BOOST_FOREACH(const CTransaction &tx, block.vtx) {
         SyncWithWallets(tx.GetHash(), tx, &block);
     }
-    
+
     if (!Checkpoints::IsSyncCheckpointEnforced()) // checkpoint advisory mode
     {
         //if (pindexBest->pprev && !Checkpoints::CheckSyncCheckpoint(pindexBest->GetBlockHash(), pindexBest->pprev))
@@ -2054,7 +2054,7 @@ bool ConnectTip(CValidationState &state, CBlockIndex *pindexNew) {
         else
             Checkpoints::strCheckpointWarning = "";
     }
-    
+
     return true;
 }
 
@@ -2422,7 +2422,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CDiskBlockPos* dbp)
         if (Checkpoints::IsSyncCheckpointEnforced() // checkpoint enforce mode
            && !Checkpoints::CheckSyncCheckpoint(hash, pindexPrev))
             return error("AcceptBlock() : rejected by synchronized checkpoint");
-            
+
         // Don't accept any forks from the main chain prior to last checkpoint
         CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(mapBlockIndex);
         if (pcheckpoint && nHeight < pcheckpoint->nHeight)
@@ -2483,7 +2483,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CDiskBlockPos* dbp)
 
     // ppcoin: check pending sync-checkpoint
     Checkpoints::AcceptPendingSyncCheckpoint();
-    
+
     return true;
 }
 
@@ -2563,7 +2563,7 @@ bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBl
     // ppcoin: ask for pending sync-checkpoint if any
     if (!IsInitialBlockDownload())
         Checkpoints::AskForPendingSyncCheckpoint(pfrom);
- 
+
     // If we don't already have its previous block, shunt it off to holding area until we get it
     if (pblock->hashPrevBlock != 0 && !mapBlockIndex.count(pblock->hashPrevBlock))
     {
@@ -2618,14 +2618,14 @@ bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBl
         }
         mapOrphanBlocksByPrev.erase(hashPrev);
     }
-	
+
     LogPrintf("ProcessBlock: ACCEPTED\n");
 
     // ppcoin: if responsible for sync-checkpoint send it
     if (pfrom && !CSyncCheckpoint::strMasterPrivKey.empty() &&
         (int)GetArg("-checkpointdepth", -1) >= 0)
         Checkpoints::SendSyncCheckpoint(Checkpoints::AutoSelectSyncCheckpoint());
-		
+
     return true;
 }
 
@@ -3034,15 +3034,15 @@ bool InitBlockIndex() {
             LogPrintf("InitBlockIndex\n");
             if (!Checkpoints::WriteSyncCheckpoint(Params().HashGenesisBlock()))
                 return error("LoadBlockIndex() : failed to init sync checkpoint");
-			// ppcoin: if checkpoint master key changed must reset sync-checkpoint
-			LogPrintf("InitBlockIndex_CheckCheckpointPubKey\n");
-			if (!Checkpoints::CheckCheckpointPubKey())
-				return error("LoadBlockIndex() : failed to reset checkpoint master pubkey");
+            // ppcoin: if checkpoint master key changed must reset sync-checkpoint
+            LogPrintf("InitBlockIndex_CheckCheckpointPubKey\n");
+            if (!Checkpoints::CheckCheckpointPubKey())
+                return error("LoadBlockIndex() : failed to reset checkpoint master pubkey");
         } catch(std::runtime_error &e) {
             return error("LoadBlockIndex() : failed to initialize block database: %s", e.what());
         }
     }
-	
+
     return true;
 }
 
@@ -3246,7 +3246,7 @@ string GetWarnings(string strFor)
         nPriority = 3000;
         strStatusBar = strRPC = "WARNING: Inconsistent checkpoint found! Stop enforcing checkpoints and notify developers to resolve the issue.";
     }
-	
+
     // Alerts
     {
         LOCK(cs_mapAlerts);
@@ -3551,7 +3551,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         LogPrintf("receive version message: %s: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->cleanSubVer, pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString(), addrFrom.ToString(), pfrom->addr.ToString());
 
         AddTimeData(pfrom->addr, nTime);
-		
+
         // ppcoin: ask for pending sync-checkpoint if any
         if (!IsInitialBlockDownload())
             Checkpoints::AskForPendingSyncCheckpoint(pfrom);
@@ -4424,8 +4424,8 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         // in flight for over two minutes, since we first had a chance to
         // process an incoming block.
         int64_t nNow = GetTimeMicros();
-        if (!pto->fDisconnect && state.nBlocksInFlight && 
-            state.nLastBlockReceive < state.nLastBlockProcess - BLOCK_DOWNLOAD_TIMEOUT*1000000 && 
+        if (!pto->fDisconnect && state.nBlocksInFlight &&
+            state.nLastBlockReceive < state.nLastBlockProcess - BLOCK_DOWNLOAD_TIMEOUT*1000000 &&
             state.vBlocksInFlight.front().nTime < state.nLastBlockProcess - 2*BLOCK_DOWNLOAD_TIMEOUT*1000000) {
             LogPrintf("Peer %s is stalling block download, disconnecting\n", state.name.c_str());
             pto->fDisconnect = true;
