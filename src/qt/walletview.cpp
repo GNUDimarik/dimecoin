@@ -28,11 +28,14 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <iostream>
+
 WalletView::WalletView(QWidget *parent):
     QStackedWidget(parent),
     clientModel(0),
     walletModel(0)
 {
+    std::cout << "WalletView::WalletView(QWidget *parent)" << std::endl;
     // Create tabs
     overviewPage = new OverviewPage();
 

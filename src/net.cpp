@@ -1099,7 +1099,7 @@ void ThreadSocketHandler()
                 pnode->Release();
         }
 
-        //MilliSleep(10);
+        MilliSleep(10);
     }
 }
 

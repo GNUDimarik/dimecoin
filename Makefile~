@@ -33,7 +33,7 @@ am__make_dryrun = \
     test $$am__dry = yes; \
   }
 pkgdatadir = $(datadir)/dime
-pkgincludedir = $(includedir)/dime
+pkgincludedir = $(includedir)/dime /usr/include
 pkglibdir = $(libdir)/dime
 pkglibexecdir = $(libexecdir)/dime
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
@@ -194,7 +194,7 @@ CRYPTO_LIBS = -lcrypto
 CXX = g++
 CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2 -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter  -Wstack-protector -fstack-protector-all -fPIE
+CXXFLAGS = -g -O2 -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter  -Wstack-protector -fstack-protector-all -fPIE -std=c++11
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -872,7 +872,7 @@ uninstall-am:
 
 dist-hook:
 	-$(MAKE) -C $(top_distdir)/src/leveldb clean
-	#-$(GIT) archive --format=tar HEAD -- src/version.cpp | $(AMTAR) -C $(top_distdir) -xf -
+	-$(GIT) archive --format=tar HEAD -- src/version.cpp | $(AMTAR) -C $(top_distdir) -xf -
 
 distcheck-hook:
 	$(MKDIR_P) $(top_distdir)/_build/src/leveldb
