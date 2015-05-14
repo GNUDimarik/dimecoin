@@ -144,8 +144,8 @@ public:
         assert(genesis.hashMerkleRoot == uint256("0x72596a6a36d42416b5486386c6e2b7e339782ef4eb49fb8a60ec7dc3475da545"));
 
         // List of nodes for Dimecoin
-        //vSeeds.push_back(CDNSSeedData("lulupon.net", "dime.lulupon.net"));
-        //vSeeds.push_back(CDNSSeedData("moloch.net", "dime.moloch.net"));
+        vSeeds.push_back(CDNSSeedData("lulupon.net", "dime.lulupon.net"));
+        vSeeds.push_back(CDNSSeedData("moloch.net", "dime.moloch.net"));
         vSeeds.push_back(CDNSSeedData("dimefoundation.com", "dimefoundation.com"));
 
         base58Prefixes[PUBKEY_ADDRESS] = list_of(15);
